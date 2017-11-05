@@ -104,7 +104,7 @@ public class Usuario {
     }
 
     public Objeto getObjeto(String nombreObjeto) throws UsuarioSinObjetosException, ObjetoNoEncontradoException {
-
+    //public Objeto getObjeto(String nombreObjeto) throws Exception {
         for (Objeto o: this.listaObjetos) {
             if (o.nombreObjeto.equals(nombreObjeto)) {
                 return o;

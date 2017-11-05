@@ -2,6 +2,7 @@ package dsa;
 
 import dsa.Exceptions.*;
 import org.apache.log4j.Logger;
+import org.glassfish.grizzly.utils.Exceptions;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
@@ -12,32 +13,16 @@ import java.util.List;
 @Path("/json")
 public class JSONService {
 
-    protected List<Track> tracks;
+
     protected Mundo miMundo;
-    final static Logger log = Logger.getLogger(Main.class.getName());
+    String NL = System.getProperty("line.separator");
+    //final static Logger log = Logger.getLogger(Main.class.getName());
 
-    public JSONService() {
-        tracks = new ArrayList<>();
-
-        Track t1 = new Track();
-        t1.setTitle("Enter Sandman");
-        t1.setSinger("Metallica");
-        tracks.add(t1);
-
-        Track t2 = new Track();
-        t2.setTitle("La Barbacoa");
-        t2.setSinger("Georgie Dann");
-        tracks.add(t2);
-
+    public JSONService() throws UsuarioYaExisteException{
 
         Usuario user;
         Objeto objeto;
-        ArrayList<Objeto>  listaObjetos;
-
         miMundo = new Mundo();
-
-
-
 
         try {
             user = new Usuario("pol", "1234", 10, 20, 30, 40);
@@ -48,64 +33,40 @@ public class JSONService {
             user = new Usuario("marc", "marc_pass", 50, 60, 70, 80);
             objeto = new Objeto("punal", "asesinato", "puñal para asesinar a los enemigos", 300, 150);
             user.listaObjetos.add(objeto);
+            objeto = new Objeto("granada", "explosion", "granada para lanzar", 1850, 2550);
+            user.listaObjetos.add(objeto);
             miMundo.crearUsuario(user);
 
             user = new Usuario("oscar", "56789", 111, 222, 333, 40);
             miMundo.crearUsuario(user);
 
-
-        } catch (Exception e){
-            log.fatal(e.getMessage() + e.getCause());
-            e.printStackTrace();
+        }
+        catch (Exception e) {
+            //log.fatal(e.getMessage() + e.getCause());
+            //e.printStackTrace();
+            throw e;
         }
 
-
     }
-
-    @GET
-    @Path("/got/{id}")
-    @Produces(MediaType.APPLICATION_JSON)
-    public Track getTrack(@PathParam("id") int id) {
-        return tracks.get(id);
-    }
-
-    @GET
-    @Path("/get")
-    @Produces(MediaType.APPLICATION_JSON)
-    public Track getTrackInJSON() {
-
-        Track track = new Track();
-        track.setTitle("Enter Sandman");
-        track.setSinger("Metallica");
-
-        return track;
-
-    }
-
-
-
-
 
 
     @GET
     @Path("/usuario/{nombre}")
     @Produces(MediaType.APPLICATION_JSON)
     public Usuario consultarUsuarioInJSON(@PathParam("nombre") String nombre) throws UsuarioNoExisteException {
-
+    //public Usuario consultarUsuarioInJSON(@PathParam("nombre") String nombre) throws Exception {
         try {
 
             //Objeto re = new Objeto("espada", "samurai", "espada para luchar contra los enemigos", 500, 350);
             Usuario user = miMundo.consultarUsuario(nombre);
             return user;
 
-        } catch (Exception e){
+        } catch (Exception e) {
             //log.fatal(e.getMessage() + e.getCause());
             //e.printStackTrace();
-
-            //return Response.status(201).entity("Usuario modificado: ").build();
-            //Response.status(201).entity("Objeto añadido: ").build();
-
             throw e;
+            //throw new Exception("Usuario no existe " + e);
+
             //return Response.status( 404 ).entity( e.getCause() ).build();;
         }
     }
@@ -113,36 +74,39 @@ public class JSONService {
     @GET
     @Path("/listaUsuarios")
     @Produces(MediaType.APPLICATION_JSON)
-    public List<Usuario> consultarListaDeUsuarioInJSON() throws ListaUsuariosException {
+    public List<Usuario> consultarListaDeUsuarioInJSON() throws ListaUsuariosVaciaException {
+    //public List<Usuario> consultarListaDeUsuarioInJSON() throws  Exception {
         try {
 
             return miMundo.consultarListaUsuarios();
 
-        } catch (Exception e){
+        } catch (Exception e) {
+            //throw new Exception(e);
             throw e;
         }
     }
 
     @GET
     @Path("/usuario/{nombre}/{nombreObjeto}")
-    @Produces(MediaType.APPLICATION_JSON)
+    @Produces({MediaType.APPLICATION_JSON,MediaType.TEXT_PLAIN})
     public Objeto consultarObjetoDeUsuarioInJSON(@PathParam("nombre") String nombre, @PathParam("nombreObjeto") String nombreObjeto) throws UsuarioNoExisteException, UsuarioSinObjetosException, ObjetoNoEncontradoException {
-
+    //public Objeto consultarObjetoDeUsuarioInJSON(@PathParam("nombre") String nombre, @PathParam("nombreObjeto") String nombreObjeto) throws Exception, UsuarioNoExisteException, UsuarioSinObjetosException {
         try {
 
             //Objeto re = new Objeto("espada", "samurai", "espada para luchar contra los enemigos", 500, 350);
             Objeto objeto = miMundo.consultarObjetoDeUsuario(nombre, nombreObjeto);
             return objeto;
 
-        } catch (Exception e){
+        } catch (Exception e) {
             throw e;
+            //throw new Exception(" Objeto no encontrado " + "\r\n" + e);
         }
     }
 
     @GET
     @Path("/usuario/{nombre}/listaObjetos")
     @Produces(MediaType.APPLICATION_JSON)
-    public List<Objeto> consultarObjetosDeUsuarioInJSON(@PathParam("nombre") String nombre) throws UsuarioNoExisteException, ListaObjetosVaciaException{
+    public List<Objeto> consultarObjetosDeUsuarioInJSON(@PathParam("nombre") String nombre) throws UsuarioNoExisteException, UsuarioSinObjetosException {
 
         try {
 
@@ -155,19 +119,91 @@ public class JSONService {
     }
 
     @POST
-    @Path("/usuario/{nombre}/{password}/{nivel}/{ataque}/{defensa}/{resistencia}")
-    //@Produces(MediaType.TEXT_PLAIN)
-    @Produces(MediaType.APPLICATION_JSON)
-    public List<Usuario> crearUsuarioInJSON(@PathParam("nombre") String nombre, @PathParam("password") String password, @PathParam("nivel") int nivel, @PathParam("ataque") int ataque, @PathParam("defensa") int defensa, @PathParam("resistencia") int resistencia) throws ListaUsuariosException, UsuarioYaExisteException {
+    @Path("/newUser/{nombre}/{password}/{nivel}/{ataque}/{defensa}/{resistencia}")
+    @Produces(MediaType.TEXT_PLAIN)
+    //@Produces(MediaType.APPLICATION_JSON)
+    public Response crearUsuarioInJSON(@PathParam("nombre") String nombre, @PathParam("password") String password, @PathParam("nivel") int nivel, @PathParam("ataque") int ataque, @PathParam("defensa") int defensa, @PathParam("resistencia") int resistencia) throws UsuarioYaExisteException {
 
         try {
             Usuario user = new Usuario(nombre, password, nivel, ataque, defensa, resistencia);
             miMundo.crearUsuario(user);
-            return consultarListaDeUsuarioInJSON();
-            //return Response.status(201).entity("Usuario añadido correctamente.").build();
 
-        } catch (Exception e){
+            return Response.status(201).entity("Usuario añadido correctamente.").build();
+            //return consultarListaDeUsuarioInJSON();
+
+        } catch (Exception e) {
             throw e;
+        }
+    }
+
+    @POST
+    @Path("/newObject/{nombre}/{nombreObjeto}/{tipoObjeto}/{descripcionObjeto}/{valorObjeto}/{costeObjeto}")
+    //@Produces(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.TEXT_PLAIN)
+    public Response añadirObjetoAUsuarioInJSON(@PathParam("nombre") String nombre, @PathParam("nombreObjeto") String nombreObjeto, @PathParam("tipoObjeto") String tipoObjeto, @PathParam("descripcionObjeto") String descripcionObjeto, @PathParam("valorObjeto") int valorObjeto, @PathParam("costeObjeto") int costeObjeto) throws UsuarioNoExisteException {
+
+        try {
+
+            Objeto objeto = new Objeto(nombreObjeto, tipoObjeto, descripcionObjeto, valorObjeto, costeObjeto);
+            miMundo.añadirObjetoAUsuario(nombre, objeto);
+
+            //return consultarUsuarioInJSON(nombre);
+            return Response.status(201).entity("Objeto añadido correctamente.").build();
+
+        } catch (Exception e) {
+            throw e;
+        }
+    }
+
+    @POST
+    @Path("removeUser/{nombre}/")
+    @Produces(MediaType.TEXT_PLAIN)
+    //@Produces(MediaType.APPLICATION_JSON)
+    public Response eliminarUsuarioInJSON(@PathParam("nombre") String nombre) throws UsuarioNoExisteException {
+
+        try {
+
+            if (miMundo.eliminarUsuario(nombre))
+                return Response.status(201).entity("Usuario eliminado correctamente.").build();
+
+        } catch (Exception e) {
+            throw e;
+        }
+        // Porque pide Response aqui (Missing return statement) ??
+        return Response.status(500).entity("Error al eliminar el Usuario.").build();
+    }
+
+    @POST
+    @Path("removeObject/{nombre}/")
+    @Produces(MediaType.TEXT_PLAIN)
+    //@Produces(MediaType.APPLICATION_JSON)
+    public Response eliminarObjetosDeUsuarioInJSON(@PathParam("nombre") String nombre) throws UsuarioNoExisteException, UsuarioSinObjetosException {
+
+        try {
+
+            if (miMundo.eliminarObjetosDeUsuario(nombre))
+                return Response.status(201).entity("Objeto eliminado correctamente.").build();
+
+        } catch (Exception e) {
+            throw e;
+        }
+        // Porque pide Response aqui (Missing return statement) ??
+        return Response.status(500).entity("Error al eliminar el Objeto.").build();
+    }
+
+    @POST
+    @Path("transferObject/{origen}/{destino}/{nombreObjeto}")
+    @Produces(MediaType.TEXT_PLAIN)
+    //@Produces(MediaType.APPLICATION_JSON)
+    //public Response transferirObjetosEntreUsuariosInJSON(@PathParam("origen") String origen, @PathParam("destino") String destino, @PathParam("nombreObjeto") String nombreObjeto) throws UsuarioNoExisteException, UsuarioSinObjetosException, ObjetoNoEncontradoException {
+    public Response transferirObjetosEntreUsuariosInJSON(@PathParam("origen") String origen, @PathParam("destino") String destino, @PathParam("nombreObjeto") String nombreObjeto) throws Exception {
+
+        try {
+            miMundo.transferirObjetoEntreUsuarios(origen, destino, nombreObjeto);
+            return Response.status(201).entity("Objeto transferido correctamente.").build();
+
+        } catch (Exception e) {
+            throw new Exception(e);
         }
     }
 
@@ -177,22 +213,22 @@ public class JSONService {
 
 
 
-    @POST
-    @Path("/new")
-    @Consumes(MediaType.APPLICATION_JSON)
-    public Response newTrack(Track track) {
-        tracks.add(track);
-        // Atencion: siempre añade en la misma posicion por el scope de tracks
-        return Response.status(201).entity("Track added in position "+tracks.size()).build();
+
+
+    @Path("exception")
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String throwIt() throws Exception {
+        throw new Exception("My exception");
     }
 
-    @POST
-    @Path("/post")
-    @Consumes(MediaType.APPLICATION_JSON)
-    public Response createTrackInJSON(Track track) {
 
-        String result = "Track saved : " + track;
-        return Response.status(201).entity(result).build();
-    }
+
 
 }
+
+
+
+
+
+

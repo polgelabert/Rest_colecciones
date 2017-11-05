@@ -1,4 +1,5 @@
 package dsa;
+import org.apache.log4j.Logger;
 
 import dsa.Exceptions.*;
 
@@ -9,8 +10,9 @@ import java.util.List;
 //public class Mundo implements IMundo{
 public class Mundo{
 
+
     HashMap<String,Usuario> map = new HashMap<>();
-    List<Objeto> list_obj_cons;
+
 
 
     public boolean crearUsuario(Usuario u) throws UsuarioYaExisteException{
@@ -22,12 +24,8 @@ public class Mundo{
 
     public void añadirObjetoAUsuario (String nombre, Objeto objeto) throws UsuarioNoExisteException {
 
-        // map.get(u).listaObjetos.add(o);
-        Usuario usuario = map.get(nombre);
-
-        if (usuario == null) throw new UsuarioNoExisteException();
+        Usuario usuario = getUser(nombre);
         usuario.insertarObjeto(objeto);
-
     }
 
     public Usuario consultarUsuario (String nombre) throws UsuarioNoExisteException {
@@ -45,7 +43,7 @@ public class Mundo{
      * //@throws lanza una excepcion en caso que ...
      */
     public Objeto consultarObjetoDeUsuario(String nombre, String nombreObjeto) throws UsuarioNoExisteException, UsuarioSinObjetosException, ObjetoNoEncontradoException {
-
+    //public Objeto consultarObjetoDeUsuario(String nombre, String nombreObjeto) throws Exception {
 
         Usuario usuario = getUser(nombre);
         Objeto objeto = usuario.getObjeto(nombreObjeto);
@@ -59,11 +57,11 @@ public class Mundo{
      * @throws ListaObjetosVaciaException
      * @throws UsuarioNoExisteException
      */
-    public List<Objeto> consultarObjetosDeUsuario (String nombre) throws ListaObjetosVaciaException, UsuarioNoExisteException {
+    public List<Objeto> consultarObjetosDeUsuario (String nombre) throws UsuarioSinObjetosException, UsuarioNoExisteException {
 
         Usuario usuario = getUser(nombre);
         List<Objeto> listaObjetos = usuario.getListaObjetos(nombre);
-        if (listaObjetos == null || listaObjetos.size() == 0) throw new ListaObjetosVaciaException();
+        if (listaObjetos == null || listaObjetos.size() == 0) throw new UsuarioSinObjetosException();
         return listaObjetos;
         //return  map.get(nombre).listaObjetos;
     }
@@ -73,7 +71,6 @@ public class Mundo{
         Usuario usuario = getUser(nombre);
         removeUser(usuario);
 
-        //map.remove(nombre);
         return true;
     }
 
@@ -82,36 +79,32 @@ public class Mundo{
         Usuario usuario = getUser(nombre);
         removeObject(usuario);
         return true;
-
-        /*
-            if(map.get(nombre).listaObjetos.size() > 0){
-            map.get(nombre).listaObjetos.remove(0);
-            return true;
-            } else {
-            return false;
-            }
-        */
     }
 
-    public void transferirObjetoEntreUsuarios (String origen, String destino, String nom_obj) throws UsuarioNoExisteException, UsuarioSinObjetosException, ObjetoNoEncontradoException {
+    public void transferirObjetoEntreUsuarios (String origen, String destino, String nombreObjeto) throws UsuarioNoExisteException, UsuarioSinObjetosException, ObjetoNoEncontradoException {
+    //public void transferirObjetoEntreUsuarios (String origen, String destino, String nombreObjeto) throws Exception, UsuarioNoExisteException, UsuarioSinObjetosException {
 
-        Objeto objeto = consultarObjetoDeUsuario(origen, nom_obj);
+        Objeto objeto = consultarObjetoDeUsuario(origen, nombreObjeto);
         Usuario dest = getUser(destino);
         dest.listaObjetos.add(objeto);
         Usuario orig = getUser(origen);
         orig.listaObjetos.remove(objeto);
     }
 
-    public List<Usuario> consultarListaUsuarios() throws ListaUsuariosException {
+
+
+
+
+    public List<Usuario> consultarListaUsuarios() throws ListaUsuariosVaciaException {
 
         List<Usuario> listaUsers = new ArrayList<Usuario>();
-        if (!listaUsers.addAll(map.values())) throw new ListaUsuariosException();
+        if (!listaUsers.addAll(map.values())) throw new ListaUsuariosVaciaException();
         return listaUsers;
     }
 
     private Usuario getUser(String nombre) throws UsuarioNoExisteException {
 
-        if (map.get(nombre) == null) throw new UsuarioNoExisteException();
+        if (!map.containsKey(nombre)) throw new UsuarioNoExisteException();
         return map.get(nombre);
     }
 
@@ -127,42 +120,6 @@ public class Mundo{
         if(usuario.listaObjetos.size() == 0) throw new UsuarioSinObjetosException();
         usuario.listaObjetos.remove(0);
     }
-
-
-
-
-
-
-////////////////////////////////////////////////////////////////////////////////////
-
-    public String nombreUsuario () throws UsuarioNoExisteException {
-        Mundo miMundo = new Mundo();
-        HashMap<String, Usuario> map = new HashMap<>();
-        Usuario player, returned;
-        Objeto o;
-        ArrayList<Objeto>  lobj = new ArrayList<Objeto>();
-
-        player = new Usuario("marc", "pass_marc", 50, 60, 70, 80, lobj);
-       // o = new Objeto("espada", "samurai", "espada para luchar contra los enemigos", 500, 350);
-      //  player.listaObjetos.add(o);
-       // player.listaObjetos.remove(o);
-        miMundo.map.put(player.nombre, player);
-
-        Usuario re = miMundo.consultarUsuario("marc");
-        return re.nombre;
-    }
-
-
-/*
-    public Usuario consultarUsuario (int id) throws UsuarioNoExisteException {
-
-        Usuario usuario = getUser(id);
-        if( usuario == null) throw new dsa.Exceptions.UsuarioNoExisteException();
-        return usuario;
-    }
-*/
-
-
 
 
 
